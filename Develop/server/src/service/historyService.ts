@@ -1,4 +1,12 @@
 // TODO: Define a City class with name and id properties
+class City {
+  cityName: string;
+  id: string;
+  constructor(cityName: string, id: string) {
+    this.cityName = cityName;
+    this.id = id;
+  }
+}
 
 // TODO: Complete the HistoryService class
 class HistoryService {
