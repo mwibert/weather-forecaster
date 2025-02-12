@@ -1,25 +1,108 @@
-// TODO: Define a City class with name and id properties
-class City {
-  cityName: string;
+import fs from "fs/promises";
+import path from "path";
+
+export interface City {
   id: string;
-  constructor(cityName: string, id: string) {
-    this.cityName = cityName;
-    this.id = id;
+  name: string;
+}
+
+class HistoryService {
+  private storageKey: string;
+  private isBrowser: boolean;
+  private filePath: string;
+
+  constructor(storageKey: string = "searchHistory") {
+    this.storageKey = storageKey;
+    this.isBrowser = typeof window !== "undefined"; // Check if running in a browser
+    this.filePath = path.join(process.cwd(), "searchHistory.json"); // For Node.js
+  }
+
+  // Ensure storage exists (localStorage or file)
+  private async ensureStorageExists(): Promise<void> {
+    if (this.isBrowser) {
+      if (!localStorage.getItem(this.storageKey)) {
+        console.warn(
+          "History storage not found in localStorage. Initializing with an empty array."
+        );
+        localStorage.setItem(this.storageKey, JSON.stringify([]));
+      }
+    } else {
+      try {
+        await fs.access(this.filePath);
+      } catch (error) {
+        console.warn("History file not found. Creating a new one.");
+        await fs.writeFile(this.filePath, JSON.stringify([]), "utf-8");
+      }
+    }
+  }
+
+  // Read data (localStorage or file)
+  private async read(): Promise<City[]> {
+    await this.ensureStorageExists();
+    if (this.isBrowser) {
+      const data = localStorage.getItem(this.storageKey);
+      return data ? JSON.parse(data) : [];
+    } else {
+      const data = await fs.readFile(this.filePath, "utf-8");
+      return JSON.parse(data);
+    }
+  }
+
+  // Write data (localStorage or file)
+  private async write(cities: City[]): Promise<void> {
+    if (this.isBrowser) {
+      localStorage.setItem(this.storageKey, JSON.stringify(cities));
+    } else {
+      await fs.writeFile(
+        this.filePath,
+        JSON.stringify(cities, null, 2),
+        "utf-8"
+      );
+    }
+  }
+
+  // Get all cities
+  async getCities(): Promise<City[]> {
+    return this.read();
+  }
+
+  // Add a new city
+  async addCity(cityName: string): Promise<void> {
+    const cities = await this.getCities();
+    const newCity: City = {
+      id: Date.now().toString(),
+      name: cityName,
+    };
+
+    if (
+      !cities.find((city) => city.name.toLowerCase() === cityName.toLowerCase())
+    ) {
+      cities.push(newCity);
+      await this.write(cities);
+    } else {
+      console.log(`City "${cityName}" already exists in history.`);
+    }
+  }
+
+  // Remove a city by ID
+  async removeCity(id: string): Promise<void> {
+    const cities = await this.getCities();
+    const updatedCities = cities.filter((city) => city.id !== id);
+
+    if (cities.length === updatedCities.length) {
+      console.log(`City with ID "${id}" not found.`);
+    }
+
+    await this.write(updatedCities);
   }
 }
 
-// TODO: Complete the HistoryService class
-class HistoryService {
-  // TODO: Define a read method that reads from the searchHistory.json file
-  // private async read() {}
-  // TODO: Define a write method that writes the updated cities array to the searchHistory.json file
-  // private async write(cities: City[]) {}
-  // TODO: Define a getCities method that reads the cities from the searchHistory.json file and returns them as an array of City objects
-  // async getCities() {}
-  // TODO Define an addCity method that adds a city to the searchHistory.json file
-  // async addCity(city: string) {}
-  // * BONUS TODO: Define a removeCity method that removes a city from the searchHistory.json file
-  // async removeCity(id: string) {}
-}
+const historyService = new HistoryService();
 
-export default new HistoryService();
+(async () => {
+  await historyService.addCity("New York");
+  const cities = await historyService.getCities();
+  console.log(cities);
+})();
+
+export default HistoryService;
