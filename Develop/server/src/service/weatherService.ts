@@ -10,30 +10,30 @@ interface Coordinates {
 
 // DONE: Define a class for the Weather object
 class Weather {
-  cityName: string;
+  city: string;
   date: string;
-  temperature: number;
+  tempF: number;
   windSpeed: number;
   humidity: number;
   icon: string;
-  weatherDescription: string;
+  iconDescription: string;
 
   constructor(
-    cityName: string,
+    city: string,
     date: string,
-    temperature: number,
+    tempF: number,
     windSpeed: number,
     humidity: number,
     icon: string,
-    weatherDescription: string
+    iconDescription: string
   ) {
-    this.cityName = cityName;
+    this.city = city;
     this.date = date;
-    this.temperature = temperature;
+    this.tempF = tempF;
     this.windSpeed = windSpeed;
     this.humidity = humidity;
     this.icon = icon;
-    this.weatherDescription = weatherDescription;
+    this.iconDescription = iconDescription;
   }
 }
 
@@ -59,9 +59,9 @@ class WeatherService {
     return response[0];
   }
 
-  private destructureLocationData(locationData: Coordinates): Coordinates {
-    const { cityName, latitude, longitude } = locationData;
-    return { cityName, latitude, longitude };
+  private destructureLocationData(locationData: any): Coordinates {
+    const { name, lat, lon } = locationData;
+    return { cityName: name, latitude: lat, longitude: lon };
   }
 
   private buildGeocodeQuery(): string {
@@ -69,7 +69,7 @@ class WeatherService {
   }
 
   private buildWeatherQuery(coordinates: Coordinates): string {
-    return `${this.baseURL}/data/2.5/forecast?lat=${coordinates.latitude}&lon=${coordinates.longitude}&appid=${this.APIkey}`;
+    return `${this.baseURL}/data/2.5/forecast?units=imperial&lat=${coordinates.latitude}&lon=${coordinates.longitude}&appid=${this.APIkey}`;
   }
 
   private async fetchAndDestructureLocationData(): Promise<Coordinates> {
@@ -98,7 +98,8 @@ class WeatherService {
   private parseCurrentWeather(response: any): Weather {
     return new Weather(
       this.cityName,
-      new Date(response.dt * 1000).toISOString(), // Convert Unix timestamp to ISO date
+      response.dt_txt.split(" ")[0],
+      // new Date(response.dt * 1000).toISOString(), // Convert Unix timestamp to ISO date
       response.main.temp,
       response.wind.speed,
       response.main.humidity,
@@ -120,7 +121,8 @@ class WeatherService {
       weatherForecast.push(
         new Weather(
           this.cityName,
-          new Date(day.dt * 1000).toISOString(), // Convert Unix timestamp to ISO date
+          day.dt_txt.split(" ")[0],
+          // new Date(day.dt * 1000).toISOString(), // Convert Unix timestamp to ISO date
           day.main.temp,
           day.wind.speed,
           day.main.humidity,
@@ -137,10 +139,11 @@ class WeatherService {
     try {
       this.cityName = city;
       const coordinates = await this.fetchAndDestructureLocationData();
+
       return await this.fetchWeatherData(coordinates);
     } catch (error) {
       console.error("Error in getWeatherForCity:", error);
-      return undefined;
+      return [];
     }
   }
 }
