@@ -15,7 +15,7 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Serve static files
-app.use(express.static(path.resolve(__dirname, "../client/dist")));
+app.use(express.static(path.resolve(__dirname, "../../client/dist")));
 
 // Middleware
 app.use(express.json());
@@ -26,7 +26,7 @@ app.use(routes);
 
 // Catch-all route to serve the client app
 app.get("*", (_req, res) => {
-  res.sendFile(path.resolve(__dirname, "../client/dist/index.html"));
+  res.sendFile(path.resolve(__dirname, "../../client/dist/index.html"));
 });
 
 // Start the server
